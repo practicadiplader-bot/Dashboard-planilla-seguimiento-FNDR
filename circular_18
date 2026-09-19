@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Circular 18</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f4f6f9; color: #333; padding: 20px;
+    }
+    h1 { font-size: 1.8rem; margin-bottom: 6px; color: #1a3a5c; }
+    .subtitulo { font-size: 0.95rem; color: #666; margin-bottom: 20px; }
+    .filtros {
+      display: flex; gap: 15px; flex-wrap: wrap; align-items: center;
+      margin-bottom: 25px; background: #fff; padding: 15px 20px;
+      border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .filtros label {
+      font-weight: 600; font-size: 0.9rem; color: #444;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .filtros select {
+      padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.9rem; background: #fff; cursor: pointer; max-width: 260px;
+    }
+    .filtros button {
+      padding: 7px 16px; border: none; border-radius: 6px;
+      background: #2E86AB; color: #fff; font-weight: 600;
+      cursor: pointer; font-size: 0.9rem;
+    }
+    .filtros button:hover { background: #1f6a8a; }
+    .kpis {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 15px; margin-bottom: 25px;
+    }
+    .kpi {
+      background: #fff; border-radius: 10px; padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07); text-align: center;
+    }
+    .kpi .valor { font-size: 1.7rem; font-weight: 700; color: #1a3a5c; }
+    .kpi .etiqueta { font-size: 0.82rem; color: #777; margin-top: 5px; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(430px, 1fr));
+      gap: 22px;
+    }
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07); display: flex; flex-direction: column;
+    }
+    .card h2 {
+      font-size: 1.05rem; margin-bottom: 14px; color: #1a3a5c;
+      border-bottom: 2px solid #e8eef4; padding-bottom: 8px;
+    }
+    .card canvas { max-height: 340px; width: 100% !important; }
+    .cargando { text-align: center; padding: 60px 20px; font-size: 1.1rem; color: #888; }
+    .error {
+      background: #ffecec; color: #a33; padding: 14px 18px;
+      border-radius: 8px; margin-bottom: 18px;
+      border-left: 4px solid #c73e1d; font-size: 0.9rem;
+    }
+    .info {
+      background: #eef7ff; color: #1a3a5c; padding: 12px 16px;
+      border-radius: 8px; margin-bottom: 18px;
+      border-left: 4px solid #2E86AB; font-size: 0.88rem;
+    }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Dashboard Circular 18</h1>
+  <p class="subtitulo">Datos en vivo de la hoja <strong>circular_18</strong>.</p>
+
+  <div id="contenedorMensajes"></div>
+
+  <div class="filtros">
+    <label>Estado:
+      <select id="filtroEstado"><option value="Todos">Todos</option></select>
+    </label>
+    <label>Evaluador:
+      <select id="filtroEvaluador"><option value="Todos">Todos</option></select>
+    </label>
+    <label>Comuna:
+      <select id="filtroComuna"><option value="Todas">Todas</option></select>
+    </label>
+    <label>Tipología:
+      <select id="filtroTipologia"><option value="Todas">Todas</option></select>
+    </label>
+    <label>Versión:
+      <select id="filtroVersion"><option value="Todas">Todas</option></select>
+    </label>
+    <button id="btnRecargar">🔄 Recargar datos</button>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="card"><h2>Proyectos por Estado</h2><canvas id="chartEstado"></canvas></div>
+    <div class="card"><h2>Proyectos por Comuna (Top 15)</h2><canvas id="chartComuna"></canvas></div>
+    <div class="card"><h2>Proyectos por Tipología</h2><canvas id="chartTipologia"></canvas></div>
+    <div class="card"><h2>Proyectos por Evaluador</h2><canvas id="chartEvaluador"></canvas></div>
+    <div class="card"><h2>Proyectos por Versión</h2><canvas id="chartVersion"></canvas></div>
+    <div class="card"><h2>Monto Total por Estado</h2><canvas id="chartMontoEstado"></canvas></div>
+    <div class="card"><h2>Monto Total por Comuna (Top 15)</h2><canvas id="chartMontoComuna"></canvas></div>
+    <div class="card"><h2>Monto Promedio por Tipología</h2><canvas id="chartMontoTipologia"></canvas></div>
+    <div class="card"><h2>Distribución de Montos por Rango</h2><canvas id="chartRangos"></canvas></div>
+    <div class="card"><h2>Estado × Evaluador</h2><canvas id="chartEstadoEvaluador"></canvas></div>
+    <div class="card"><h2>Iteración 1: ¿Con Respuesta?</h2><canvas id="chartRespuesta"></canvas></div>
+    <div class="card"><h2>Proyectos por Formulador (Top 10)</h2><canvas id="chartFormulador"></canvas></div>
+  </div>
+
+  <script>
+    const SPREADSHEET_ID = '1LC9SUVf9GSQpfbNvjW0IEOS2Uuh_dkj6w4DXfVZAj9Y';
+    const HOJA = 'circular_18';
+
+    const CAMPOS = [
+      'codigo_bip', 'nombre', 'comuna', 'formulador',
+      'monto_total_m$', 'estado', 'evaluador',
+      'tipologia', 'version',
+      't_1', 't_r_1'
+    ];
+
+    let datosGlobales = [];
+    const graficos = {};
+
+    const paleta = [
+      '#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#3B1F2B',
+      '#6A994E', '#BC4B51', '#5C8001', '#F4A259', '#8CB369',
+      '#4E8098', '#C9A227', '#8E5572', '#395B50', '#9B2915'
+    ];
+
+    function formatearMonto(n) { return Math.round(n).toLocaleString('es-CL'); }
+
+    function normalizarMonto(valor) {
+      if (valor === '' || valor === null || valor === undefined) return 0;
+      if (typeof valor === 'number') return valor;
+      let texto = String(valor)
+        .replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '.')
+        .replace(/\s+/g, '').trim();
+      const num = Number(texto);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function normalizarEncabezado(h) {
+      return String(h).trim().toLowerCase().replace(/\s+/g, '_');
+    }
+
+    function contarPor(datos, campo) {
+      const c = {};
+      datos.forEach(d => {
+        const k = d[campo] || 'Sin dato';
+        c[k] = (c[k] || 0) + 1;
+      });
+      return c;
+    }
+    function sumarPor(datos, campo, campoMonto) {
+      const c = {};
+      datos.forEach(d => {
+        const k = d[campo] || 'Sin dato';
+        c[k] = (c[k] || 0) + (d[campoMonto] || 0);
+      });
+      return c;
+    }
+    function promedioPor(datos, campo, campoMonto) {
+      const suma = {}, cant = {};
+      datos.forEach(d => {
+        const k = d[campo] || 'Sin dato';
+        suma[k] = (suma[k] || 0) + (d[campoMonto] || 0);
+        cant[k] = (cant[k] || 0) + 1;
+      });
+      const prom = {};
+      Object.keys(suma).forEach(k => { prom[k] = suma[k] / cant[k]; });
+      return prom;
+    }
+    function ordenarYLimitar(obj, limite) {
+      const entradas = Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, limite);
+      return { labels: entradas.map(e => e[0]), values: entradas.map(e => e[1]) };
+    }
+    function ordenarPorLabel(obj) {
+      const entradas = Object.entries(obj).sort((a, b) => String(a[0]).localeCompare(String(b[0]), 'es'));
+      return { labels: entradas.map(e => e[0]), values: entradas.map(e => e[1]) };
+    }
+
+    let jsonpCounter = 0;
+    function cargarHojaJSONP(nombreHoja) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'gviz_cb_' + (++jsonpCounter);
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}`
+                  + `/gviz/tq?tqx=responseHandler:${callbackName}`
+                  + `&sheet=${encodeURIComponent(nombreHoja)}`;
+        const script = document.createElement('script');
+        script.src = url;
+        const timeout = setTimeout(() => {
+          cleanup();
+          reject(new Error(`Timeout al cargar "${nombreHoja}"`));
+        }, 15000);
+        function cleanup() {
+          clearTimeout(timeout);
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        }
+        window[callbackName] = function (resp) {
+          cleanup();
+          if (!resp || !resp.table) { reject(new Error(`Respuesta sin tabla`)); return; }
+          resolve(resp.table);
+        };
+        script.onerror = function () { cleanup(); reject(new Error(`No se pudo cargar`)); };
+        document.head.appendChild(script);
+      });
+    }
+
+    function tablaARegistros(table) {
+      if (!table || !table.cols || !table.rows) return [];
+      const encabezados = table.cols.map(c => normalizarEncabezado(c.label || c.id || ''));
+      const indices = {};
+      CAMPOS.forEach(campo => {
+        const objetivo = normalizarEncabezado(campo);
+        indices[campo] = encabezados.findIndex(h => h === objetivo || h.startsWith(objetivo));
+      });
+      const registros = [];
+      table.rows.forEach(row => {
+        if (!row.c) return;
+        const registro = {};
+        let tieneDatos = false;
+        CAMPOS.forEach(campo => {
+          const idx = indices[campo];
+          let valor = '';
+          if (idx >= 0 && row.c[idx]) {
+            valor = row.c[idx].v !== null && row.c[idx].v !== undefined ? row.c[idx].v : '';
+          }
+          if (campo === 'monto_total_m$') valor = normalizarMonto(valor);
+          else valor = valor === null || valor === undefined ? '' : String(valor).trim();
+          if (valor !== '' && valor !== 0) tieneDatos = true;
+          registro[campo] = valor;
+        });
+        if (tieneDatos && (registro.codigo_bip || registro.nombre)) registros.push(registro);
+      });
+      return registros;
+    }
+
+    async function iniciar() {
+      document.getElementById('kpis').innerHTML = '';
+      document.getElementById('contenedorMensajes').innerHTML = '';
+      Object.keys(graficos).forEach(k => { graficos[k].destroy(); delete graficos[k]; });
+
+      const msg = document.createElement('div');
+      msg.className = 'cargando';
+      msg.id = 'msgCargando';
+      msg.textContent = `⏳ Cargando datos de la hoja "${HOJA}"…`;
+      document.body.insertBefore(msg, document.body.firstChild);
+
+      let tabla;
+      try { tabla = await cargarHojaJSONP(HOJA); }
+      catch (e) {
+        document.getElementById('msgCargando')?.remove();
+        document.getElementById('contenedorMensajes').innerHTML =
+          `<div class="error">❌ ${e.message}<br>Verifica que el Sheet esté público y que la pestaña se llame <code>${HOJA}</code>.</div>`;
+        return;
+      }
+      document.getElementById('msgCargando')?.remove();
+
+      const datos = tablaARegistros(tabla);
+      if (datos.length === 0) {
+        document.getElementById('contenedorMensajes').innerHTML =
+          '<div class="error">La hoja no contiene filas válidas.</div>';
+        return;
+      }
+      datosGlobales = datos;
+      document.getElementById('contenedorMensajes').innerHTML =
+        `<div class="info">✅ Cargados <b>${datos.length}</b> proyectos desde la hoja <b>${HOJA}</b>.</div>`;
+
+      const selEstado = document.getElementById('filtroEstado');
+      const selEvaluador = document.getElementById('filtroEvaluador');
+      const selComuna = document.getElementById('filtroComuna');
+      const selTipologia = document.getElementById('filtroTipologia');
+      const selVersion = document.getElementById('filtroVersion');
+
+      [
+        [selEstado, 'Todos', 'estado'],
+        [selEvaluador, 'Todos', 'evaluador'],
+        [selComuna, 'Todas', 'comuna'],
+        [selTipologia, 'Todas', 'tipologia'],
+        [selVersion, 'Todas', 'version']
+      ].forEach(([sel, defVal, campo]) => {
+        sel.innerHTML = `<option value="${defVal}">${defVal}</option>`;
+        [...new Set(datosGlobales.map(d => d[campo] || 'Sin dato'))]
+          .sort()
+          .forEach(v => sel.add(new Option(v, v)));
+      });
+
+      selEstado.onchange = actualizarTodo;
+      selEvaluador.onchange = actualizarTodo;
+      selComuna.onchange = actualizarTodo;
+      selTipologia.onchange = actualizarTodo;
+      selVersion.onchange = actualizarTodo;
+
+      actualizarTodo();
+    }
+
+    function obtenerDatosFiltrados() {
+      const fe = document.getElementById('filtroEstado').value;
+      const fv = document.getElementById('filtroEvaluador').value;
+      const fc = document.getElementById('filtroComuna').value;
+      const ft = document.getElementById('filtroTipologia').value;
+      const fver = document.getElementById('filtroVersion').value;
+
+      return datosGlobales.filter(d => {
+        if (fe !== 'Todos' && (d.estado || 'Sin dato') !== fe) return false;
+        if (fv !== 'Todos' && (d.evaluador || 'Sin dato') !== fv) return false;
+        if (fc !== 'Todas' && (d.comuna || 'Sin dato') !== fc) return false;
+        if (ft !== 'Todas' && (d.tipologia || 'Sin dato') !== ft) return false;
+        if (fver !== 'Todas' && (d.version || 'Sin dato') !== fver) return false;
+        return true;
+      });
+    }
+
+    function actualizarTodo() {
+      const datos = obtenerDatosFiltrados();
+      actualizarKPIs(datos);
+      actualizarGraficos(datos);
+    }
+
+    function actualizarKPIs(datos) {
+      const total = datos.length;
+      const montoTotal = datos.reduce((s, d) => s + (d.monto_total_m$ || 0), 0);
+      const montoProm = total > 0 ? montoTotal / total : 0;
+      const comunas = new Set(datos.map(d => d.comuna).filter(Boolean)).size;
+      const enEspera = datos.filter(d => d.estado === 'Espera Respuesta Observaciones').length;
+      const pctEspera = total > 0 ? (enEspera * 100 / total).toFixed(0) : '0';
+      const conEnvio = datos.filter(d => d.t_1).length;
+      const conResp = datos.filter(d => d.t_r_1).length;
+      const pctResp = conEnvio > 0 ? (conResp * 100 / conEnvio).toFixed(0) : '0';
+
+      document.getElementById('kpis').innerHTML = `
+        <div class="kpi"><div class="valor">${total}</div><div class="etiqueta">Proyectos</div></div>
+        <div class="kpi"><div class="valor">${comunas}</div><div class="etiqueta">Comunas</div></div>
+        <div class="kpi"><div class="valor">$${formatearMonto(montoTotal)}</div><div class="etiqueta">Monto Total (m$)</div></div>
+        <div class="kpi"><div class="valor">$${formatearMonto(montoProm)}</div><div class="etiqueta">Monto Promedio (m$)</div></div>
+        <div class="kpi"><div class="valor">${pctEspera}%</div><div class="etiqueta">Espera Resp. Obs.</div></div>
+        <div class="kpi"><div class="valor">${pctResp}%</div><div class="etiqueta">Respondidos iter. 1</div></div>
+      `;
+    }
+
+    function destruirGrafico(id) {
+      if (graficos[id]) { graficos[id].destroy(); delete graficos[id]; }
+    }
+
+    function crearGraficoBarras(id, labels, values, color, horizontal) {
+      destruirGrafico(id);
+      const ctx = document.getElementById(id).getContext('2d');
+      graficos[id] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: Array.isArray(color) ? color : (color || paleta[0]),
+            borderRadius: 5
+          }]
+        },
+        options: {
+          indexAxis: horizontal ? 'y' : 'x',
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ' ' + (horizontal ? ctx.parsed.x : ctx.parsed.y).toLocaleString('es-CL') } }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('es-CL') } },
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function crearGraficoDona(id, labels, values) {
+      destruirGrafico(id);
+      const ctx = document.getElementById(id).getContext('2d');
+      graficos[id] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{ data: values, backgroundColor: paleta.slice(0, labels.length) }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'right', labels: { boxWidth: 14, font: { size: 11 } } },
+            tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed.toLocaleString('es-CL') } }
+          }
+        }
+      });
+    }
+
+    function actualizarGraficos(datos) {
+      // 1. Proyectos por Estado
+      const estadoOrd = ordenarYLimitar(contarPor(datos, 'estado'), 15);
+      crearGraficoBarras('chartEstado', estadoOrd.labels, estadoOrd.values, paleta[0], true);
+
+      // 2. Proyectos por Comuna (Top 15)
+      const comunaOrd = ordenarYLimitar(contarPor(datos, 'comuna'), 15);
+      crearGraficoBarras('chartComuna', comunaOrd.labels, comunaOrd.values, paleta[1], true);
+
+      // 3. Proyectos por Tipología
+      const tipOrd = ordenarYLimitar(contarPor(datos, 'tipologia'), 12);
+      crearGraficoBarras('chartTipologia', tipOrd.labels, tipOrd.values, paleta[2], true);
+
+      // 4. Proyectos por Evaluador
+      const evalOrd = ordenarYLimitar(contarPor(datos, 'evaluador'), 12);
+      crearGraficoBarras('chartEvaluador', evalOrd.labels, evalOrd.values, paleta[3], true);
+
+      // 5. Proyectos por Versión
+      const verOrd = ordenarPorLabel(contarPor(datos, 'version'));
+      crearGraficoBarras('chartVersion', verOrd.labels, verOrd.values, paleta[4], false);
+
+      // 6. Monto Total por Estado
+      const montoEstado = sumarPor(datos, 'estado', 'monto_total_m$');
+      const montoEstadoOrd = ordenarYLimitar(montoEstado, 12);
+      crearGraficoBarras('chartMontoEstado', montoEstadoOrd.labels, montoEstadoOrd.values, paleta[5], true);
+
+      // 7. Monto Total por Comuna (Top 15)
+      const montoComunaOrd = ordenarYLimitar(sumarPor(datos, 'comuna', 'monto_total_m$'), 15);
+      crearGraficoBarras('chartMontoComuna', montoComunaOrd.labels, montoComunaOrd.values, paleta[6], true);
+
+      // 8. Monto Promedio por Tipología
+      const promTip = promedioPor(datos, 'tipologia', 'monto_total_m$');
+      const promTipOrd = ordenarYLimitar(promTip, 12);
+      crearGraficoBarras('chartMontoTipologia', promTipOrd.labels, promTipOrd.values, paleta[7], true);
+
+      // 9. Distribución de Montos por Rango
+      const rangos = ['0-50k', '50k-100k', '100k-200k', '200k-500k', '>500k'];
+      const distribucion = [0, 0, 0, 0, 0];
+      datos.forEach(d => {
+        const m = d.monto_total_m$ || 0;
+        let idx = 0;
+        if (m > 500000) idx = 4;
+        else if (m > 200000) idx = 3;
+        else if (m > 100000) idx = 2;
+        else if (m > 50000) idx = 1;
+        distribucion[idx]++;
+      });
+      crearGraficoBarras('chartRangos', rangos, distribucion, paleta.slice(0, 5), false);
+
+      // 10. Estado × Evaluador
+      const evaluadores = [...new Set(datos.map(d => d.evaluador || 'Sin dato'))].sort();
+      const estados = [...new Set(datos.map(d => d.estado || 'Sin dato'))].sort();
+      const matriz = {};
+      evaluadores.forEach(ev => {
+        matriz[ev] = {};
+        estados.forEach(es => { matriz[ev][es] = 0; });
+      });
+      datos.forEach(d => {
+        const ev = d.evaluador || 'Sin dato';
+        const es = d.estado || 'Sin dato';
+        if (matriz[ev]) matriz[ev][es]++;
+      });
+
+      destruirGrafico('chartEstadoEvaluador');
+      const ctxEE = document.getElementById('chartEstadoEvaluador').getContext('2d');
+      graficos['chartEstadoEvaluador'] = new Chart(ctxEE, {
+        type: 'bar',
+        data: {
+          labels: evaluadores,
+          datasets: estados.map((es, i) => ({
+            label: es,
+            data: evaluadores.map(ev => matriz[ev][es]),
+            backgroundColor: paleta[i % paleta.length]
+          }))
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+            tooltip: { mode: 'index', intersect: false }
+          },
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+      });
+
+      // 11. Iteración 1: ¿Con respuesta?
+      const conEnvio = datos.filter(d => d.t_1).length;
+      const conEnvioYResp = datos.filter(d => d.t_1 && d.t_r_1).length;
+      const conEnvioSinResp = conEnvio - conEnvioYResp;
+      const sinEnvio = datos.length - conEnvio;
+      crearGraficoDona('chartRespuesta',
+        ['Sin envío de observaciones', 'Envío sin respuesta', 'Envío con respuesta'],
+        [sinEnvio, conEnvioSinResp, conEnvioYResp]
+      );
+
+      // 12. Proyectos por Formulador (Top 10)
+      const formOrd = ordenarYLimitar(contarPor(datos, 'formulador'), 10);
+      crearGraficoBarras('chartFormulador', formOrd.labels, formOrd.values, paleta[8], true);
+    }
+
+    document.getElementById('btnRecargar').addEventListener('click', iniciar);
+    iniciar();
+  </script>
+</body>
+</html>
