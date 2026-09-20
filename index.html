@@ -21,6 +21,58 @@
     h1 { font-size: 1.8rem; margin-bottom: 6px; color: #1a3a5c; }
     .subtitulo { font-size: 0.95rem; color: #666; margin-bottom: 20px; }
 
+    /* ====== NAVEGACIÓN ENTRE DASHBOARDS ====== */
+    .nav-dashboards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      align-items: center;
+    }
+    .nav-dashboards .nav-titulo {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-right: 8px;
+    }
+    .nav-dashboards a.nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #eef3f8;
+      color: #1a3a5c;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 1px solid #d6e0ea;
+      transition: all 0.2s ease;
+    }
+    .nav-dashboards a.nav-btn:hover {
+      background: #2E86AB;
+      color: #fff;
+      border-color: #2E86AB;
+      transform: translateY(-1px);
+    }
+    .nav-dashboards a.nav-btn.activo {
+      background: #2E86AB;
+      color: #fff;
+      border-color: #2E86AB;
+      box-shadow: 0 2px 6px rgba(46,134,171,0.35);
+    }
+    .nav-dashboards a.nav-btn.activo::after {
+      content: "●";
+      font-size: 0.7rem;
+      color: #7ee0a4;
+    }
+
     .filtros {
       display: flex; gap: 15px; flex-wrap: wrap; align-items: center;
       margin-bottom: 25px; background: #fff; padding: 15px 20px;
@@ -96,6 +148,15 @@
     <strong>admisibilidad_mideso</strong> y <strong>cartera_29</strong>.
   </p>
 
+  <!-- ====== BARRA DE NAVEGACIÓN ENTRE DASHBOARDS ====== -->
+  <nav class="nav-dashboards">
+    <span class="nav-titulo">Dashboards:</span>
+    <a href="preinversion.html"        class="nav-btn">📊 Preinversión</a>
+    <a href="circular_18.html"         class="nav-btn">📋 Circular 18</a>
+    <a href="admisibilidad_mideso.html" class="nav-btn">✅ Admisibilidad MIDESO</a>
+    <a href="cartera_29.html"          class="nav-btn activo">🗂️ Cartera 29</a>
+  </nav>
+
   <div id="contenedorMensajes"></div>
 
   <!-- Filtros -->
@@ -133,7 +194,6 @@
     // ============================================================
     const SPREADSHEET_ID = '1LC9SUVf9GSQpfbNvjW0IEOS2Uuh_dkj6w4DXfVZAj9Y';
 
-    // Nombres EXACTOS de las pestañas en tu Sheet
     const HOJAS = [
       'preinversion',
       'circular_18',
@@ -141,7 +201,6 @@
       'cartera_29'
     ];
 
-    // Campos comunes que queremos extraer
     const CAMPOS_COMUNES = [
       'codigo_bip', 'nombre', 'tipo_iniciativa', 'comuna',
       'formulador', 'monto_total_m$', 'estado', 'evaluador', 'tipo_cartera'
@@ -212,7 +271,7 @@
     }
 
     // ============================================================
-    // CARGA POR JSONP (funciona desde file://, sin CORS)
+    // CARGA POR JSONP
     // ============================================================
     let jsonpCounter = 0;
 
@@ -328,7 +387,7 @@
       const msg = document.createElement('div');
       msg.className = 'cargando';
       msg.id = 'msgCargando';
-      msg.textContent = '⏳ Cargando datos desde Google Sheets…';
+      msg.textContent = '⏳ Cargando datos…';
       document.body.insertBefore(msg, document.body.firstChild);
 
       const datos = await cargarTodosLosDatos();
@@ -476,7 +535,6 @@
       const tipoIniOrd = ordenarYLimitar(contarPor(datos, 'tipo_iniciativa'), 10);
       crearGraficoDona('chartTipoIniciativa', tipoIniOrd.labels, tipoIniOrd.values);
 
-      // Distribución de montos por cartera
       const carteras = [...new Set(datos.map(d => d.tipo_cartera || 'Sin dato'))];
       const rangos = ['0-50k', '50k-100k', '100k-200k', '200k-500k', '>500k'];
       const distribucion = {};
