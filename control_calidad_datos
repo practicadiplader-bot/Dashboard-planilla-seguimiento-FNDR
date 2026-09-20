@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Validador de Datos · Carteras FNDR 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--txt:#0f172a;--muted:#64748b;
+    --alta:#dc2626;--media:#f59e0b;--baja:#3b82f6;--ok:#16a34a;--azul:#2563eb}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);padding:18px}
+  h1{font-size:1.5rem;color:#0b3a6f;margin-bottom:4px}
+  .sub{font-size:.88rem;color:var(--muted);margin-bottom:16px}
+  .wrap{max-width:1600px;margin:0 auto}
+  .nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;background:var(--card);padding:10px 14px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);align-items:center}
+  .nav .lbl{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:6px}
+  .nav button{padding:7px 14px;border:1px solid var(--line);background:#f8fafc;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit;color:#334155;transition:.15s}
+  .nav button:hover{background:#e0f2fe;border-color:var(--azul)}
+  .nav button.activo{background:var(--azul);color:#fff;border-color:var(--azul);box-shadow:0 2px 6px rgba(37,99,235,.3)}
+  .nav button.vista.activo{background:#7c3aed;border-color:#7c3aed;box-shadow:0 2px 6px rgba(124,58,237,.3)}
+  .filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;background:var(--card);padding:14px 16px;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:16px}
+  .filtros label{display:flex;flex-direction:column;gap:4px}
+  .filtros label span{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .filtros select,.filtros input{padding:7px 10px;border:1px solid var(--line);border-radius:7px;font-size:.88rem;background:#fff;font-family:inherit;color:var(--txt)}
+  .filtros select:focus,.filtros input:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .filtros .acciones{display:flex;gap:8px;align-items:end}
+  .filtros button{padding:8px 14px;border:none;border-radius:7px;font-weight:600;font-size:.85rem;cursor:pointer;font-family:inherit}
+  .btn-primary{background:var(--azul);color:#fff}
+  .btn-primary:hover{background:#1d4ed8}
+  .btn-ghost{background:#fff;color:var(--azul);border:1px solid var(--azul)!important}
+  .btn-ghost:hover{background:#eff6ff}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border-radius:10px;padding:14px 16px;border-left:4px solid var(--azul);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .kpi .v{font-size:1.6rem;font-weight:700;line-height:1}
+  .kpi .l{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:4px;font-weight:600}
+  .kpi.alta{border-left-color:var(--alta)}.kpi.media{border-left-color:var(--media)}
+  .kpi.baja{border-left-color:var(--baja)}.kpi.ok{border-left-color:var(--ok)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  @media(max-width:1000px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border-radius:10px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h3{font-size:.9rem;color:#334155;margin-bottom:10px;font-weight:600}
+  .cvs{position:relative;height:340px}
+  .tabla-card{background:var(--card);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+  .tabla-card h3{padding:14px 16px;font-size:.9rem;color:#334155;border-bottom:1px solid var(--line);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .tabla-card h3 .count{font-size:.78rem;color:var(--muted);font-weight:500}
+  .scroll{max-height:640px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{position:sticky;top:0;background:#f8fafc;padding:9px 10px;text-align:left;font-size:.7rem;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:2px solid var(--line);font-weight:700;z-index:1}
+  td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  tr:hover td{background:#f8fafc}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap}
+  .p-alta{background:#fee2e2;color:#b91c1c}
+  .p-media{background:#fef3c7;color:#b45309}
+  .p-baja{background:#dbeafe;color:#1d4ed8}
+  .tag{display:inline-block;padding:1px 7px;border-radius:5px;font-size:.68rem;font-weight:600;background:#e2e8f0;color:#475569}
+  .formulador{font-weight:600;color:#0f172a}
+  .hoja{font-size:.72rem;color:var(--muted)}
+  .codigo{font-family:ui-monospace,monospace;font-size:.78rem}
+  .detalle{font-size:.76rem;color:#475569;max-width:340px}
+  .vacio{text-align:center;padding:40px;color:var(--muted)}
+
+  /* Vista por evaluador */
+  .eval-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:16px}
+  .eval-card{background:var(--card);border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;border-top:4px solid var(--azul);display:flex;flex-direction:column}
+  .eval-card.alta{border-top-color:var(--alta)}
+  .eval-card.media{border-top-color:var(--media)}
+  .eval-card.baja{border-top-color:var(--baja)}
+  .eval-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:#fbfcfe}
+  .eval-head h3{font-size:.95rem;color:#0b3a6f;font-weight:700;margin:0}
+  .eval-head .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;white-space:nowrap}
+  .badge.alta{background:#fee2e2;color:#b91c1c}
+  .badge.media{background:#fef3c7;color:#b45309}
+  .badge.baja{background:#dbeafe;color:#1d4ed8}
+  .badge.total{background:#e2e8f0;color:#334155}
+  .eval-actions{padding:10px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .eval-actions button{padding:6px 12px;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--line);background:#fff;color:#334155}
+  .eval-actions button.primary{background:var(--azul);color:#fff;border-color:var(--azul)}
+  .eval-actions button.primary:hover{background:#1d4ed8}
+  .eval-actions button:hover{background:#f1f5f9}
+  .eval-list{padding:8px 12px;overflow:auto;max-height:440px}
+  .err-item{padding:9px 12px;border-radius:8px;border-left:3px solid var(--baja);background:#f8fafc;margin-bottom:6px;font-size:.78rem}
+  .err-item.alta{border-left-color:var(--alta);background:#fef2f2}
+  .err-item.media{border-left-color:var(--media);background:#fffbeb}
+  .err-item.baja{border-left-color:var(--baja)}
+  .err-item .err-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+  .err-item .err-regla{font-weight:700;color:#0f172a;font-size:.78rem}
+  .err-item .err-bip{font-family:ui-monospace,monospace;font-size:.72rem;color:var(--muted)}
+  .err-item .err-nombre{color:#334155;font-size:.75rem;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .err-item .err-detalle{color:#64748b;font-size:.72rem}
+  .err-item .err-formu{color:#0f172a;font-size:.72rem;font-weight:600}
+  .err-item .err-hoja{font-size:.65rem;background:#e2e8f0;color:#475569;padding:1px 6px;border-radius:4px;font-weight:600;margin-right:4px}
+  .eval-vacio{padding:20px;text-align:center;color:var(--muted);font-size:.82rem}
+  .msg{padding:14px 18px;border-radius:8px;margin-bottom:16px;font-size:.88rem}
+  .msg.info{background:#eff6ff;color:#1e40af;border-left:4px solid var(--azul)}
+  .msg.err{background:#fef2f2;color:#991b1b;border-left:4px solid var(--alta)}
+  .msg.ok{background:#f0fdf4;color:#15803d;border-left:4px solid var(--ok)}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛡️ Validador de Datos · Carteras FNDR 2026</h1>
+  <p class="sub">Detección de inconsistencias en <b>preinversion</b>, <b>circular_18</b>, <b>admisibilidad_mideso</b> y <b>cartera_29</b> · Agrupadas por <b>evaluador</b></p>
+
+  <div id="msgBox"></div>
+
+  <nav class="nav" id="navHojas">
+    <span class="lbl">Hoja:</span>
+    <button data-hoja="TODAS" class="activo">📚 Todas</button>
+    <button data-hoja="preinversion">📈 Preinversión</button>
+    <button data-hoja="circular_18">📋 Circular 18</button>
+    <button data-hoja="admisibilidad_mideso">✅ Admisibilidad MIDESO</button>
+    <button data-hoja="cartera_29">🗂️ Cartera 29</button>
+  </nav>
+
+  <nav class="nav" id="navVista">
+    <span class="lbl">Vista:</span>
+    <button data-vista="detalle" class="vista activo">📋 Detalle de errores</button>
+    <button data-vista="evaluador" class="vista">👤 Por evaluador</button>
+  </nav>
+
+  <!-- ===== VISTA DETALLE ===== -->
+  <div id="vistaDetalle">
+    <div class="filtros">
+      <label><span>Evaluador</span><select id="fEvaluador"><option value="">Todos</option></select></label>
+      <label><span>Formulador</span><select id="fFormulador"><option value="">Todos</option></select></label>
+      <label><span>Severidad</span>
+        <select id="fSeveridad">
+          <option value="">Todas</option><option value="Alta">🔴 Alta</option>
+          <option value="Media">🟠 Media</option><option value="Baja">🔵 Baja</option>
+        </select>
+      </label>
+      <label><span>Tipo de error</span><select id="fRegla"><option value="">Todos</option></select></label>
+      <label><span>Buscar (BIP o nombre)</span><input id="fTexto" placeholder="texto…"></label>
+      <div class="acciones">
+        <button class="btn-primary" id="btnReload">🔄 Recargar</button>
+        <button class="btn-ghost" id="btnExport">📥 Exportar CSV</button>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grid">
+      <div class="card"><h3>Errores por tipo de regla</h3><div class="cvs"><canvas id="chReglas"></canvas></div></div>
+      <div class="card"><h3>Top 12 evaluadores con más errores</h3><div class="cvs"><canvas id="chEvaluadores"></canvas></div></div>
+    </div>
+
+    <div class="tabla-card">
+      <h3><span>🔍 Detalle de inconsistencias detectadas</span><span class="count" id="tablaCount">—</span></h3>
+      <div class="scroll">
+        <table>
+          <thead><tr>
+            <th style="width:90px">Severidad</th><th style="width:130px">Tipo error</th>
+            <th style="width:80px">Hoja</th><th style="width:90px">BIP</th>
+            <th>Iniciativa</th><th style="width:150px">Evaluador</th>
+            <th style="width:170px">Formulador</th><th style="width:110px">Comuna</th>
+            <th>Detalle</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VISTA POR EVALUADOR ===== -->
+  <div id="vistaEvaluador" class="hidden">
+    <div class="filtros">
+      <label><span>Severidad</span>
+        <select id="fSeveridad2">
+          <option value="">Todas</option><option value="Alta">🔴 Alta</option>
+          <option value="Media">🟠 Media</option><option value="Baja">🔵 Baja</option>
+        </select>
+      </label>
+      <label><span>Tipo de error</span><select id="fRegla2"><option value="">Todos</option></select></label>
+      <label><span>Formulador</span><select id="fFormulador2"><option value="">Todos</option></select></label>
+      <label><span>Ordenar por</span>
+        <select id="fOrden2">
+          <option value="alta">Más errores alta</option>
+          <option value="total">Más errores totales</option>
+          <option value="nombre">Nombre (A-Z)</option>
+        </select>
+      </label>
+      <div class="acciones">
+        <button class="btn-primary" id="btnExportTodos">📦 Exportar todo (CSV por evaluador)</button>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis2"></div>
+
+    <div style="margin-bottom:16px">
+      <input id="buscarEvaluador" placeholder="🔎 Buscar evaluador…" style="width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;font-size:.9rem;font-family:inherit">
+    </div>
+
+    <div class="eval-grid" id="evalGrid"></div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SPREADSHEET_ID = '1LC9SUVf9GSQpfbNvjW0IEOS2Uuh_dkj6w4DXfVZAj9Y';
+const HOJAS = ['preinversion','circular_18','admisibilidad_mideso','cartera_29'];
+const HOY = new Date(); HOY.setHours(0,0,0,0);
+
+const COMUNA_POR_MUNI = {
+  'Municipalidad de Angol':'Angol','Municipalidad de Carahue':'Carahue','Municipalidad de Cholchol':'Cholchol',
+  'Municipalidad de Collipulli':'Collipulli','Municipalidad de Cunco':'Cunco','Municipalidad de Curacautín':'Curacautín',
+  'Municipalidad de Curarrehue':'Curarrehue','Municipalidad de Ercilla':'Ercilla','Municipalidad de Freire':'Freire',
+  'Municipalidad de Galvarino':'Galvarino','Municipalidad de Gorbea':'Gorbea','Municipalidad de Lautaro':'Lautaro',
+  'Municipalidad de Loncoche':'Loncoche','Municipalidad de Lonquimay':'Lonquimay','Municipalidad de Los Sauces':'Los Sauces',
+  'Municipalidad de Lumaco':'Lumaco','Municipalidad de Melipeuco':'Melipeuco','Municipalidad de Nueva Imperial':'Nueva Imperial',
+  'Municipalidad de Padre Las Casas':'Padre Las Casas','Municipalidad de Perquenco':'Perquenco','Municipalidad de Pitrufquén':'Pitrufquén',
+  'Municipalidad de Pucón':'Pucón','Municipalidad de Purén':'Purén','Municipalidad de Renaico':'Renaico',
+  'Municipalidad de Puerto Saavedra':'Puerto Saavedra','Municipalidad de Temuco':'Temuco','Municipalidad de Teodoro Schmidt':'Teodoro Schmidt',
+  'Municipalidad de Toltén':'Toltén','Municipalidad de Traiguén':'Traiguén','Municipalidad de Victoria':'Victoria',
+  'Municipalidad de Vilcún':'Vilcún','Municipalidad de Villarrica':'Villarrica'
+};
+const COMUNAS_VALIDAS = new Set(Object.values(COMUNA_POR_MUNI));
+const TIPOS_DOC_VALIDOS = new Set(['Ordinario','Memorándum','Memorandum','Mail','Circular','Reservado','Conductor']);
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const el = id => document.getElementById(id);
+const norm = s => (s==null?'':String(s)).trim();
+const normKey = s => norm(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .replace(/\s+/g,'_').replace(/[^\w_]/g,'').replace(/^_|_$/g,'');
+const limpiarBIP = s => norm(s).replace(/\.0+$/,'').replace(/\s/g,'');
+
+function parseFechaFlex(s){
+  const str = norm(s);
+  if (!str) return null;
+  let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m){ const d = new Date(+m[1],+m[2]-1,+m[3]); return isNaN(d)?null:d; }
+  m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (m){
+    let d=+m[1], mo=+m[2], y=+m[3];
+    if (y<100) y += y<70 ? 2000 : 1900;
+    if (mo>=1&&mo<=12&&d>=1&&d<=31){ const dt=new Date(y,mo-1,d); return isNaN(dt)?null:dt; }
+  }
+  return null;
+}
+
+function parseNumFlex(v){
+  if (v === '' || v == null) return null;
+  if (typeof v === 'number') return v;
+  let s = String(v).trim().replace(/\$/g,'').replace(/\s/g,'');
+  if (!s) return null;
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g,'');
+  else if (/^-?\d{1,3}(,\d{3})+$/.test(s)) s = s.replace(/,/g,'');
+  else if (/,/.test(s) && /\./.test(s)) s = s.replace(/\./g,'').replace(',','.');
+  else if (/,/.test(s) && /^\d+,\d+$/.test(s)) s = s.replace(',','.');
+  const n = Number(s);
+  return isNaN(n) ? null : n;
+}
+
+function esFechaSentinel(d){ return d && d.getFullYear() <= 1970; }
+function esFechaFutura(d, mesesTol = 6){
+  if (!d) return false;
+  const lim = new Date(HOY); lim.setMonth(lim.getMonth() + mesesTol);
+  return d > lim;
+}
+function fmtFecha(d){ return d ? d.toLocaleDateString('es-CL') : '—'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   CARGA (JSONP)
+   ============================================================ */
+let jsonpN = 0;
+function cargarHoja(nombre){
+  return new Promise((resolve,reject) => {
+    const cb = 'vizcb_' + (++jsonpN);
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=responseHandler:${cb}&sheet=${encodeURIComponent(nombre)}`;
+    const s = document.createElement('script');
+    s.src = url;
+    const to = setTimeout(()=>{limpiar();reject(new Error('Timeout '+nombre))}, 15000);
+    function limpiar(){ clearTimeout(to); if(s.parentNode) s.parentNode.removeChild(s); try{delete window[cb]}catch(e){window[cb]=undefined} }
+    window[cb] = resp => {
+      limpiar();
+      if (!resp || !resp.table){ reject(new Error('Sin tabla '+nombre)); return; }
+      resolve(resp.table);
+    };
+    s.onerror = () => { limpiar(); reject(new Error('Error de red '+nombre)); };
+    document.head.appendChild(s);
+  });
+}
+
+function valorCelda(c){
+  if (!c) return '';
+  if (c.f != null && c.f !== '') return String(c.f).trim();
+  if (c.v instanceof Date) return c.v.toLocaleDateString('es-CL');
+  if (c.v == null) return '';
+  return c.v;
+}
+
+function tablaAFilas(table, hoja){
+  if (!table || !table.cols || !table.rows) return [];
+  const headsRaw = table.cols.map(c => norm(c.label || c.id || ''));
+  const headsKey = headsRaw.map(normKey);
+  const filas = [];
+  table.rows.forEach(row => {
+    if (!row || !row.c) return;
+    const obj = {__hoja: hoja, __headRaw: headsRaw, __headKey: headsKey};
+    headsKey.forEach((h,i) => { obj[h] = valorCelda(row.c[i]); });
+    const tiene = headsKey.some(h => norm(obj[h]) !== '');
+    if (tiene) filas.push(obj);
+  });
+  return filas;
+}
+
+function pick(obj, ...alias){
+  for (const a of alias){
+    const k = normKey(a);
+    if (k in obj) return obj[k];
+  }
+  for (const a of alias){
+    const k = normKey(a);
+    for (const key of Object.keys(obj)){
+      if (key.startsWith(k)) return obj[key];
+    }
+  }
+  return '';
+}
+
+/* ============================================================
+   NORMALIZACIÓN
+   ============================================================ */
+function extraerIteraciones(obj){
+  const its = [];
+  for (let i=1;i<=4;i++){
+    const t  = pick(obj, 't_'+i);
+    const o  = pick(obj, 'o_'+i);
+    const f  = pick(obj, 'f_'+i);
+    const tr = pick(obj, 't_r_'+i);
+    const or = pick(obj, 'o_r_'+i);
+    const fr = pick(obj, 'f_r_'+i);
+    its.push({
+      i,
+      envio: {tipo:norm(t), num:norm(o), fechaStr:norm(f),  fecha:parseFechaFlex(f)},
+      resp:  {tipo:norm(tr), num:norm(or), fechaStr:norm(fr), fecha:parseFechaFlex(fr)}
+    });
+  }
+  return its;
+}
+
+function extraerBloquesAdm(obj){
+  const bloques = [];
+  for (let i=1;i<=4;i++){
+    const tipoRecep = pick(obj, 'tipo_doc_recep'+i, 'tipo_doc_recep_'+i);
+    const numRecep  = pick(obj, 'num_ord_recep'+i, 'num_ord_recep_'+i);
+    const fAsig     = pick(obj, 'fecha_asignacion_evaluacion_admisibilidad_'+i, 'fecha_asignacion_evaluación_admisibilidad_'+i);
+    const fRecep    = pick(obj, 'fecha_recepcion_'+i, 'fecha_recepción_'+i);
+    const tipoEnvio = pick(obj, 'tipo_doc_envio_ob'+i);
+    const numEnvio  = pick(obj, 'num_ord_envio_ob'+i);
+    const fEnvio    = pick(obj, 'fecha_ord_envio_ob'+i);
+    bloques.push({
+      i,
+      recepcion: {tipo:norm(tipoRecep), num:norm(numRecep), fechaAsigStr:norm(fAsig),
+                   fechaAsig:parseFechaFlex(fAsig), fechaRecepStr:norm(fRecep), fechaRecep:parseFechaFlex(fRecep)},
+      envioObs:  {tipo:norm(tipoEnvio), num:norm(numEnvio), fechaStr:norm(fEnvio), fecha:parseFechaFlex(fEnvio)}
+    });
+  }
+  return bloques;
+}
+
+function normalizarFila(obj, hoja){
+  const codigoRaw = pick(obj, 'codigo_bip', 'codigo_BIP', 'codigo');
+  const codigo = limpiarBIP(codigoRaw);
+  const montoRaw = pick(obj, 'monto_total_m$', 'monto_total_m', 'monto_total_ms', 'monto');
+  const monto = parseNumFlex(montoRaw);
+  const f = {
+    __hoja: hoja,
+    codigoRaw: norm(codigoRaw),
+    codigo,
+    nombre: norm(pick(obj, 'nombre', 'nombre_iniciativa')),
+    tipo_iniciativa: norm(pick(obj, 'tipo_iniciativa')),
+    comuna: norm(pick(obj, 'comuna')),
+    formulador: norm(pick(obj, 'formulador')),
+    monto,
+    montoRaw: norm(montoRaw),
+    estado: norm(pick(obj, 'estado')),
+    evaluador: norm(pick(obj, 'evaluador')),
+    tipo_cartera: norm(pick(obj, 'tipo_cartera')),
+    observaciones: norm(pick(obj, 'observaciones')),
+    version: norm(pick(obj, 'version')),
+    tipologia: norm(pick(obj, 'tipologia_cartera_29','tipologia')),
+    tipo_doc_at: norm(pick(obj, 'tipo_doc_at')),
+    num_doc_at: norm(pick(obj, 'num_doc_at')),
+    fecha_at_str: norm(pick(obj, 'fecha_at')),
+    fecha_at: parseFechaFlex(pick(obj, 'fecha_at')),
+    resolucion_at: norm(pick(obj, 'resolucion_at','resolución_at')),
+    fecha_ult_mov_str: norm(pick(obj, 'fecha_ultimo_movimiento')),
+    fecha_ult_mov: parseFechaFlex(pick(obj, 'fecha_ultimo_movimiento')),
+    tipo_doc_ingreso_mideso: norm(pick(obj, 'tipo_doc_ingreso_mideso')),
+    num_doc_ingreso_mideso: norm(pick(obj, 'num_doc_ingreso_mideso')),
+    fecha_ingreso_mideso_str: norm(pick(obj, 'fecha_ingreso_mideso')),
+    fecha_ingreso_mideso: parseFechaFlex(pick(obj, 'fecha_ingreso_mideso')),
+    n_oficio: norm(pick(obj, 'n_oficio')),
+    fecha_oficio_str: norm(pick(obj, 'fecha_oficio')),
+    fecha_oficio: parseFechaFlex(pick(obj, 'fecha_oficio')),
+    fecha_ingreso_op_str: norm(pick(obj, 'fecha_ingreso_op_1')),
+    fecha_ingreso_op: parseFechaFlex(pick(obj, 'fecha_ingreso_op_1'))
+  };
+  if (hoja !== 'admisibilidad_mideso') f.iteraciones = extraerIteraciones(obj);
+  else f.bloquesAdm = extraerBloquesAdm(obj);
+  return f;
+}
+
+/* ============================================================
+   VALIDACIÓN
+   ============================================================ */
+function validarFilas(filas){
+  const errores = [];
+  const bipCountPorHoja = new Map();
+
+  filas.forEach(f => {
+    if (!f.codigo) return;
+    const k = f.__hoja + '|' + f.codigo;
+    bipCountPorHoja.set(k, (bipCountPorHoja.get(k)||0)+1);
+  });
+
+  filas.forEach(f => {
+    const push = (regla, sev, detalle) => errores.push({...f, regla, sev, detalle});
+
+    // BIP
+    if (!f.codigoRaw) push('BIP vacío', 'Alta', 'No tiene Código BIP');
+    else if (f.codigoRaw.toUpperCase() === 'S/C') push('BIP "S/C"', 'Alta', 'Usa "S/C" en lugar de un código BIP real');
+    else if (/\.\d/.test(f.codigoRaw)) push('BIP con formato incorrecto', 'Baja', `"${f.codigoRaw}" (debe ser entero sin ".0")`);
+    else if (!/^\d+$/.test(f.codigo)) push('BIP no numérico', 'Alta', `"${f.codigoRaw}" no es un código numérico válido`);
+
+    if (f.codigo){
+      const k = f.__hoja + '|' + f.codigo;
+      const n = bipCountPorHoja.get(k)||0;
+      if (n > 1) push('BIP duplicado en la hoja', 'Alta', `Aparece ${n} veces en "${f.__hoja}"`);
+    }
+
+    if (!f.nombre) push('Nombre vacío', 'Alta', 'Sin nombre de iniciativa');
+    else if (/<br\s*\/?>|&lt;br/i.test(f.nombre)) push('Nombre con HTML residual', 'Baja', 'Contiene "<br>" u otra etiqueta HTML');
+
+    if (!f.comuna){
+      if (f.formulador.startsWith('Municipalidad')) push('Comuna vacía', 'Alta', `Municipalidad sin comuna`);
+      else if (f.formulador) push('Comuna vacía', 'Media', `Formulador "${f.formulador}" sin comuna`);
+    } else if (!COMUNAS_VALIDAS.has(f.comuna) &&
+               !/^(MALLECO|CAUTÍN|CAUTIN|REGION|REGIÓN|REGIONAL|SSAS|SSAN|NACIONAL|CONAF|MINVU)$/i.test(f.comuna)){
+      push('Comuna no reconocida', 'Media', `"${f.comuna}" no está entre las 32 comunas`);
+    } else if (f.formulador.startsWith('Municipalidad')){
+      const esperada = COMUNA_POR_MUNI[f.formulador];
+      if (esperada && normKey(esperada) !== normKey(f.comuna))
+        push('Comuna no coincide con formulador', 'Media',
+             `Formulador "${f.formulador}" ≠ comuna "${f.comuna}" (esperado: ${esperada})`);
+    }
+
+    if (!f.formulador) push('Formulador vacío', 'Alta', 'Sin entidad formuladora');
+    if (!f.evaluador && f.estado && !/recepcion|ingresado|no admisible/i.test(f.estado))
+      push('Evaluador vacío', 'Baja', `Estado "${f.estado}" sin evaluador asignado`);
+    if (!f.estado) push('Estado vacío', 'Alta', 'Sin estado asignado');
+
+    if (f.monto === null || f.monto === 0) push('Monto vacío o cero', 'Media', `Valor: "${f.montoRaw || '(vacío)'}"`);
+    else if (f.monto < 0) push('Monto negativo', 'Alta', `Monto: ${f.monto}`);
+    else if (f.monto > 100000000) push('Monto sospechoso', 'Media', `${f.monto.toLocaleString('es-CL')} m$ — ¿está en pesos en lugar de M$?`);
+    if (/\$/.test(f.montoRaw)) push('Monto con signo $', 'Baja', `"${f.montoRaw}" contiene "$" (no corresponde)`);
+
+    if (f.__hoja === 'cartera_29'){
+      if (f.estado.toLowerCase() === 'otros' && /^0[.,]02$/.test(f.tipologia))
+        push('Valor mal ubicado (0,02)', 'Media', `Estado "Otros" con tipología "${f.tipologia}"`);
+      if (f.resolucion_at && /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(f.resolucion_at))
+        push('Resolución_AT contiene fecha', 'Media', `"${f.resolucion_at}" debe ser N° de resolución`);
+    }
+
+    if (f.__hoja === 'admisibilidad_mideso'){
+      if (/campo equivocado|campo incorrecto/i.test(f.observaciones))
+        push('Nota: dato mal ubicado', 'Baja', f.observaciones.slice(0,120));
+      if (f.num_doc_ingreso_mideso && /^\d{1,3}(\.\d{3})+$/.test(f.num_doc_ingreso_mideso))
+        push('N° oficio con separador de miles', 'Baja', `"${f.num_doc_ingreso_mideso}" debe ser entero`);
+      if (!f.fecha_ult_mov_str && f.estado && !/no admisible/i.test(f.estado))
+        push('Fecha último mov. vacía', 'Baja', `Estado "${f.estado}" sin Fecha Último Movimiento`);
+    }
+
+    if (f.iteraciones){
+      const conDatos = f.iteraciones.filter(it =>
+        it.envio.tipo||it.envio.num||it.envio.fechaStr ||
+        it.resp.tipo||it.resp.num||it.resp.fechaStr);
+
+      conDatos.forEach(it => {
+        const e = it.envio, r = it.resp;
+        if ((e.tipo||e.num||e.fechaStr) && !(r.tipo||r.num||r.fechaStr)){
+          if (!(f.estado && /espera respuesta/i.test(f.estado)))
+            push('Envío sin respuesta', 'Media', `It.${it.i}: envío ${e.num||e.tipo||''} sin respuesta`);
+        }
+        if ((r.tipo||r.num||r.fechaStr) && !(e.tipo||e.num||e.fechaStr))
+          push('Respuesta sin envío', 'Alta', `It.${it.i}: respuesta ${r.num||r.tipo||''} sin envío previo`);
+        if (e.tipo && !e.num) push('Envío sin N° oficio', 'Baja', `It.${it.i}: tipo "${e.tipo}" sin número`);
+        if (r.tipo && !r.num) push('Respuesta sin N° oficio', 'Baja', `It.${it.i}: tipo "${r.tipo}" sin número`);
+        if (e.num && !e.fechaStr) push('Envío sin fecha', 'Media', `It.${it.i}: N° ${e.num} sin fecha`);
+        if (r.num && !r.fechaStr) push('Respuesta sin fecha', 'Media', `It.${it.i}: N° ${r.num} sin fecha`);
+        if (e.fechaStr && !e.num) push('Envío con fecha sin N°', 'Media', `It.${it.i}: fecha ${e.fechaStr} sin N°`);
+        if (r.fechaStr && !r.num) push('Respuesta con fecha sin N°', 'Media', `It.${it.i}: fecha ${r.fechaStr} sin N°`);
+        if (e.tipo && !TIPOS_DOC_VALIDOS.has(e.tipo)) push('Tipo doc no estándar', 'Baja', `Envío it.${it.i}: "${e.tipo}"`);
+        if (r.tipo && !TIPOS_DOC_VALIDOS.has(r.tipo)) push('Tipo doc no estándar', 'Baja', `Respuesta it.${it.i}: "${r.tipo}"`);
+        if (e.fechaStr && !e.fecha) push('Fecha ilegible (envío)', 'Media', `It.${it.i}: "${e.fechaStr}"`);
+        if (r.fechaStr && !r.fecha) push('Fecha ilegible (respuesta)', 'Media', `It.${it.i}: "${r.fechaStr}"`);
+        if (esFechaSentinel(e.fecha)) push('Fecha placeholder en envío', 'Baja', `It.${it.i}: ${fmtFecha(e.fecha)}`);
+        if (esFechaSentinel(r.fecha)) push('Fecha placeholder en respuesta', 'Baja', `It.${it.i}: ${fmtFecha(r.fecha)}`);
+        if (esFechaFutura(e.fecha)) push('Fecha futura (envío)', 'Alta', `It.${it.i}: ${fmtFecha(e.fecha)}`);
+        if (esFechaFutura(r.fecha)) push('Fecha futura (respuesta)', 'Alta', `It.${it.i}: ${fmtFecha(r.fecha)}`);
+      });
+
+      const activas = conDatos.map(it => it.i).sort();
+      if (activas.length >= 2){
+        for (let i = activas[0]; i < activas[activas.length-1]; i++){
+          if (!activas.includes(i)) push('Iteración salteada', 'Media', `Falta iteración ${i}`);
+        }
+      }
+    }
+
+    if (f.tipo_doc_at || f.num_doc_at || f.fecha_at_str){
+      if (f.tipo_doc_at && !f.num_doc_at) push('AT sin N°', 'Baja', `Tipo "${f.tipo_doc_at}" sin N°`);
+      if (f.num_doc_at && !f.fecha_at_str) push('AT sin fecha', 'Media', `N° ${f.num_doc_at} sin fecha`);
+      if (f.fecha_at_str && !f.num_doc_at) push('AT con fecha sin N°', 'Media', `Fecha ${f.fecha_at_str} sin N°`);
+      if (f.fecha_at_str && !f.fecha_at) push('Fecha AT ilegible', 'Media', `"${f.fecha_at_str}"`);
+      if (esFechaFutura(f.fecha_at)) push('Fecha AT futura', 'Alta', fmtFecha(f.fecha_at));
+      if (esFechaSentinel(f.fecha_at)) push('Fecha AT placeholder', 'Baja', fmtFecha(f.fecha_at));
+    }
+  });
+
+  return errores;
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let ERRORES = [];
+let TODAS_LAS_FILAS = [];
+let hojaActiva = 'TODAS';
+let vistaActual = 'detalle';
+let charts = {};
+
+/* ============================================================
+   CARGA
+   ============================================================ */
+async function cargarTodo(){
+  el('msgBox').innerHTML = '<div class="msg info">⏳ Cargando datos desde las 4 hojas…</div>';
+  const todasFilas = [];
+  const resumen = [];
+
+  for (const h of HOJAS){
+    try{
+      const tabla = await cargarHoja(h);
+      const filas = tablaAFilas(tabla, h).map(r => normalizarFila(r, h));
+      const utiles = filas.filter(f => f.codigo || f.nombre);
+      todasFilas.push(...utiles);
+      resumen.push(`✅ <b>${h}</b>: ${utiles.length} filas`);
+    }catch(e){
+      resumen.push(`❌ <b>${h}</b>: ${e.message}`);
+    }
+  }
+
+  TODAS_LAS_FILAS = todasFilas;
+  ERRORES = validarFilas(todasFilas);
+
+  const numEvals = new Set(ERRORES.map(e => e.evaluador||'(sin evaluador)')).size;
+  el('msgBox').innerHTML = `<div class="msg ok"><b>Resumen de carga:</b><br>${resumen.join('<br>')}<br><br>
+    <b>Total:</b> ${todasFilas.length} filas · <b>${ERRORES.length} inconsistencias</b> · 
+    <b>${numEvals} evaluadores afectados</b></div>`;
+
+  // Poblar selects
+  const eSet = [...new Set(ERRORES.map(e => e.evaluador).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const eOpts = '<option value="">Todos</option>' + eSet.map(v=>`<option>${esc(v)}</option>`).join('');
+  el('fEvaluador').innerHTML = eOpts;
+
+  const fSet = [...new Set(ERRORES.map(e => e.formulador).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  const fOpts = '<option value="">Todos</option>' + fSet.map(v=>`<option>${esc(v)}</option>`).join('');
+  el('fFormulador').innerHTML = fOpts;
+  el('fFormulador2').innerHTML = fOpts;
+
+  const rSet = [...new Set(ERRORES.map(e => e.regla))].sort((a,b)=>a.localeCompare(b,'es'));
+  const rOpts = '<option value="">Todos</option>' + rSet.map(v=>`<option>${esc(v)}</option>`).join('');
+  el('fRegla').innerHTML = rOpts;
+  el('fRegla2').innerHTML = rOpts;
+
+  render();
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+function filtrarBase(){
+  const fE = el('fEvaluador').value;
+  const fF = el('fFormulador').value;
+  const fS = el('fSeveridad').value;
+  const fR = el('fRegla').value;
+  const fT = el('fTexto').value.trim().toLowerCase();
+
+  return ERRORES.filter(e => {
+    if (hojaActiva !== 'TODAS' && e.__hoja !== hojaActiva) return false;
+    if (fE && e.evaluador !== fE) return false;
+    if (fF && e.formulador !== fF) return false;
+    if (fS && e.sev !== fS) return false;
+    if (fR && e.regla !== fR) return false;
+    if (fT && !e.codigo.toLowerCase().includes(fT) && !e.nombre.toLowerCase().includes(fT)) return false;
+    return true;
+  });
+}
+
+function filtrarVistaEvaluador(){
+  const fS = el('fSeveridad2').value;
+  const fR = el('fRegla2').value;
+  const fF = el('fFormulador2').value;
+  const fB = el('buscarEvaluador').value.trim().toLowerCase();
+
+  return ERRORES.filter(e => {
+    if (hojaActiva !== 'TODAS' && e.__hoja !== hojaActiva) return false;
+    if (fS && e.sev !== fS) return false;
+    if (fR && e.regla !== fR) return false;
+    if (fF && e.formulador !== fF) return false;
+    if (fB && !(e.evaluador||'').toLowerCase().includes(fB)) return false;
+    return true;
+  });
+}
+
+/* ============================================================
+   RENDER PRINCIPAL
+   ============================================================ */
+function render(){
+  if (vistaActual === 'detalle') renderDetalle();
+  else renderEvaluador();
+}
+
+/* ============================================================
+   VISTA DETALLE
+   ============================================================ */
+function renderDetalle(){
+  const datos = filtrarBase();
+
+  const alta  = datos.filter(e => e.sev === 'Alta').length;
+  const media = datos.filter(e => e.sev === 'Media').length;
+  const baja  = datos.filter(e => e.sev === 'Baja').length;
+  const evals = new Set(datos.map(e => e.evaluador).filter(Boolean)).size;
+  const filas = new Set(datos.map(e => e.__hoja+'|'+e.codigo)).size;
+  const totalFilas = hojaActiva==='TODAS' ? TODAS_LAS_FILAS.length : TODAS_LAS_FILAS.filter(f=>f.__hoja===hojaActiva).length;
+
+  el('kpis').innerHTML = `
+    <div class="kpi"><div class="v">${totalFilas}</div><div class="l">Filas analizadas</div></div>
+    <div class="kpi alta"><div class="v">${alta}</div><div class="l">Errores alta</div></div>
+    <div class="kpi media"><div class="v">${media}</div><div class="l">Errores media</div></div>
+    <div class="kpi baja"><div class="v">${baja}</div><div class="l">Errores baja</div></div>
+    <div class="kpi ok"><div class="v">${evals}</div><div class="l">Evaluadores afectados</div></div>
+    <div class="kpi"><div class="v">${filas}</div><div class="l">Filas afectadas</div></div>
+  `;
+
+  // Chart reglas
+  const mR = new Map();
+  datos.forEach(e => mR.set(e.regla, (mR.get(e.regla)||0)+1));
+  const rOrd = [...mR.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if (charts.chReglas) charts.chReglas.destroy();
+  charts.chReglas = new Chart(el('chReglas').getContext('2d'), {
+    type:'bar',
+    data:{ labels: rOrd.map(x=>x[0]),
+      datasets:[{ data: rOrd.map(x=>x[1]),
+        backgroundColor: rOrd.map(x => {
+          const filas = datos.filter(d=>d.regla===x[0]);
+          if (filas.some(f=>f.sev==='Alta')) return '#dc2626';
+          if (filas.some(f=>f.sev==='Media')) return '#f59e0b';
+          return '#3b82f6';
+        }), borderRadius:5 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{ beginAtZero:true, grid:{color:'#eef2f7'} },
+                y:{ grid:{display:false}, ticks:{font:{size:10}} } } }
+  });
+
+  // Chart evaluadores
+  const mE = new Map();
+  datos.forEach(e => {
+    const k = e.evaluador || 'Sin evaluador';
+    mE.set(k, (mE.get(k)||0)+1);
+  });
+  const eOrd = [...mE.entries()].sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if (charts.chEvaluadores) charts.chEvaluadores.destroy();
+  charts.chEvaluadores = new Chart(el('chEvaluadores').getContext('2d'), {
+    type:'bar',
+    data:{ labels: eOrd.map(x=>x[0]),
+      datasets:[{ data: eOrd.map(x=>x[1]), backgroundColor:'#7c3aed', borderRadius:5 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{ beginAtZero:true, grid:{color:'#eef2f7'} },
+                y:{ grid:{display:false}, ticks:{font:{size:10}} } } }
+  });
+
+  // Tabla
+  el('tablaCount').textContent = `${datos.length} inconsistencias mostradas`;
+  const tbody = el('tbody');
+  if (!datos.length){
+    tbody.innerHTML = '<tr><td colspan="9" class="vacio">✅ Sin inconsistencias con los filtros aplicados</td></tr>';
+    return;
+  }
+  const orden = {Alta:0, Media:1, Baja:2};
+  const ordenados = [...datos].sort((a,b) => {
+    const s = orden[a.sev] - orden[b.sev];
+    if (s !== 0) return s;
+    return (a.evaluador||'').localeCompare(b.evaluador||'','es');
+  });
+
+  tbody.innerHTML = ordenados.slice(0, 600).map(e => {
+    const pClass = e.sev === 'Alta' ? 'p-alta' : e.sev === 'Media' ? 'p-media' : 'p-baja';
+    return `<tr>
+      <td><span class="pill ${pClass}">${e.sev}</span></td>
+      <td><span class="tag">${esc(e.regla)}</span></td>
+      <td><span class="hoja">${e.__hoja}</span></td>
+      <td><span class="codigo">${esc(e.codigo) || '—'}</span></td>
+      <td>${esc(e.nombre).slice(0,90)}${e.nombre.length>90?'…':''}</td>
+      <td class="formulador">${e.evaluador ? esc(e.evaluador) : '<span style="color:#dc2626">(vacío)</span>'}</td>
+      <td>${e.formulador ? esc(e.formulador) : '<span style="color:#dc2626">(vacío)</span>'}</td>
+      <td>${e.comuna ? esc(e.comuna) : '<span style="color:#dc2626">(vacía)</span>'}</td>
+      <td class="detalle">${esc(e.detalle)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ============================================================
+   VISTA POR EVALUADOR
+   ============================================================ */
+function renderEvaluador(){
+  const datos = filtrarVistaEvaluador();
+
+  const grupos = new Map();
+  datos.forEach(e => {
+    const k = e.evaluador || '(Sin evaluador)';
+    if (!grupos.has(k)) grupos.set(k, {nombre: k, items: [], alta:0, media:0, baja:0, hojas: new Set(), filas: new Set(), formuladores: new Set()});
+    const g = grupos.get(k);
+    g.items.push(e);
+    g[e.sev.toLowerCase()]++;
+    g.hojas.add(e.__hoja);
+    g.filas.add(e.__hoja+'|'+e.codigo);
+    if (e.formulador) g.formuladores.add(e.formulador);
+  });
+
+  const total = datos.length;
+  const numEvals = grupos.size;
+  const alta = datos.filter(e=>e.sev==='Alta').length;
+  const media = datos.filter(e=>e.sev==='Media').length;
+  const baja = datos.filter(e=>e.sev==='Baja').length;
+  const peor = [...grupos.values()].sort((a,b)=>b.alta-a.alta || b.items.length-a.items.length)[0];
+
+  el('kpis2').innerHTML = `
+    <div class="kpi"><div class="v">${numEvals}</div><div class="l">Evaluadores</div></div>
+    <div class="kpi alta"><div class="v">${alta}</div><div class="l">Errores alta</div></div>
+    <div class="kpi media"><div class="v">${media}</div><div class="l">Errores media</div></div>
+    <div class="kpi baja"><div class="v">${baja}</div><div class="l">Errores baja</div></div>
+    <div class="kpi ok"><div class="v">${total}</div><div class="l">Total inconsistencias</div></div>
+    <div class="kpi" title="${peor ? esc(peor.nombre) : ''}">
+      <div class="v" style="font-size:1rem;line-height:1.2;word-break:break-word">${peor ? esc(peor.nombre) : '—'}</div>
+      <div class="l">Evaluador con más errores</div>
+    </div>
+  `;
+
+  const ord = el('fOrden2').value;
+  let arr = [...grupos.values()];
+  if (ord === 'alta') arr.sort((a,b) => b.alta - a.alta || b.media - a.media || b.items.length - a.items.length);
+  else if (ord === 'total') arr.sort((a,b) => b.items.length - a.items.length);
+  else arr.sort((a,b) => a.nombre.localeCompare(b.nombre,'es'));
+
+  const cont = el('evalGrid');
+  if (!arr.length){
+    cont.innerHTML = '<div class="eval-vacio" style="grid-column:1/-1">Sin errores con los filtros aplicados</div>';
+    return;
+  }
+
+  cont.innerHTML = arr.map(g => {
+    const nivel = g.alta > 0 ? 'alta' : g.media > 0 ? 'media' : 'baja';
+    const hojas = [...g.hojas].map(h => `<span class="err-hoja">${h}</span>`).join('');
+    const items = g.items
+      .sort((a,b) => {
+        const o = {Alta:0,Media:1,Baja:2};
+        return o[a.sev]-o[b.sev];
+      })
+      .map(e => `
+        <div class="err-item ${e.sev.toLowerCase()}">
+          <div class="err-head">
+            <span class="err-regla">${esc(e.regla)}</span>
+            <span class="err-bip">${esc(e.codigo) || '—'}</span>
+          </div>
+          <div class="err-formu">🏛️ ${esc(e.formulador) || '(sin formulador)'} · ${esc(e.comuna) || '(sin comuna)'}</div>
+          <div class="err-nombre" title="${esc(e.nombre)}">${esc(e.nombre).slice(0,90)}${e.nombre.length>90?'…':''}</div>
+          <div class="err-detalle">${esc(e.detalle)}</div>
+        </div>`).join('');
+
+    return `
+      <div class="eval-card ${nivel}" data-evaluador="${esc(g.nombre)}">
+        <div class="eval-head">
+          <h3>👤 ${esc(g.nombre)}</h3>
+          <div class="badges">
+            ${g.alta ? `<span class="badge alta">${g.alta} alta</span>` : ''}
+            ${g.media ? `<span class="badge media">${g.media} media</span>` : ''}
+            ${g.baja ? `<span class="badge baja">${g.baja} baja</span>` : ''}
+            <span class="badge total">${g.items.length} total</span>
+          </div>
+        </div>
+        <div class="eval-actions">
+          ${hojas}
+          <span style="flex:1"></span>
+          <span style="font-size:.72rem;color:#64748b">${g.formuladores.size} formulador${g.formuladores.size!==1?'es':''}</span>
+          <button data-accion="copiar" data-evaluador="${esc(g.nombre)}">📋 Copiar lista</button>
+          <button class="primary" data-accion="csv" data-evaluador="${esc(g.nombre)}">📥 Exportar CSV</button>
+        </div>
+        <div class="eval-list">${items}</div>
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('button[data-accion]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nombre = btn.dataset.evaluador;
+      const accion = btn.dataset.accion;
+      const g = arr.find(x => x.nombre === nombre);
+      if (!g) return;
+      if (accion === 'csv') exportarEvaluadorCSV(g);
+      else if (accion === 'copiar') copiarLista(g, btn);
+    });
+  });
+}
+
+/* ============================================================
+   EXPORTAR
+   ============================================================ */
+function filaCSV(f) {
+  return [
+    f.sev, f.regla, f.__hoja, f.codigo, f.nombre, f.evaluador, f.formulador, f.comuna, f.estado,
+    f.monto == null ? '' : f.monto, f.detalle
+  ].map(v => {
+    const s = String(v ?? '').replace(/"/g,'""');
+    return /[",\n;]/.test(s) ? `"${s}"` : s;
+  }).join(';');
+}
+
+function descargarCSV(nombre, contenido){
+  const blob = new Blob(['\uFEFF' + contenido], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function nombreArchivoSeguro(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\s-]/g,'').trim().replace(/\s+/g,'_').slice(0,60);
+}
+
+function exportarEvaluadorCSV(g){
+  const head = ['Severidad','Tipo error','Hoja','Código BIP','Iniciativa','Evaluador','Formulador','Comuna','Estado','Monto (M$)','Detalle'];
+  const orden = {Alta:0,Media:1,Baja:2};
+  const items = [...g.items].sort((a,b) => orden[a.sev]-orden[b.sev]);
+  const csv = [head.join(';'), ...items.map(filaCSV)].join('\n');
+  descargarCSV(`errores_${nombreArchivoSeguro(g.nombre)}_${new Date().toISOString().slice(0,10)}.csv`, csv);
+}
+
+function copiarLista(g, btn){
+  const orden = {Alta:0,Media:1,Baja:2};
+  const items = [...g.items].sort((a,b) => orden[a.sev]-orden[b.sev]);
+  const txt = `Errores detectados · Evaluador: ${g.nombre}\n\n` +
+    items.map(e => `[${e.sev}] ${e.regla} · ${e.__hoja} · BIP ${e.codigo || '—'}\n  Formulador: ${e.formulador || '(vacío)'} · ${e.comuna || ''}\n  ${e.nombre.slice(0,100)}\n  ${e.detalle}`).join('\n\n');
+
+  const done = () => {
+    const original = btn.textContent;
+    btn.textContent = '✅ Copiado';
+    setTimeout(() => { btn.textContent = original; }, 1500);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); done();
+  }
+}
+
+function exportarTodosCSV(){
+  const datos = filtrarVistaEvaluador();
+  const grupos = new Map();
+  datos.forEach(e => {
+    const k = e.evaluador || '(Sin evaluador)';
+    if (!grupos.has(k)) grupos.set(k, []);
+    grupos.get(k).push(e);
+  });
+
+  const head = ['Severidad','Tipo error','Hoja','Código BIP','Iniciativa','Evaluador','Formulador','Comuna','Estado','Monto (M$)','Detalle'];
+  const orden = {Alta:0,Media:1,Baja:2};
+  let out = '';
+  [...grupos.keys()].sort((a,b)=>a.localeCompare(b,'es')).forEach(k => {
+    out += `\n\n===== ${k} (${grupos.get(k).length} errores) =====\n`;
+    out += head.join(';') + '\n';
+    const items = [...grupos.get(k)].sort((a,b)=>orden[a.sev]-orden[b.sev]);
+    items.forEach(e => { out += filaCSV(e) + '\n'; });
+  });
+
+  descargarCSV(`errores_por_evaluador_${new Date().toISOString().slice(0,10)}.csv`, out.trim());
+}
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+document.querySelectorAll('#navHojas button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#navHojas button').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    hojaActiva = btn.dataset.hoja;
+    render();
+  });
+});
+
+document.querySelectorAll('#navVista button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#navVista button').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    vistaActual = btn.dataset.vista;
+    el('vistaDetalle').classList.toggle('hidden', vistaActual !== 'detalle');
+    el('vistaEvaluador').classList.toggle('hidden', vistaActual !== 'evaluador');
+    render();
+  });
+});
+
+['fEvaluador','fFormulador','fSeveridad','fRegla'].forEach(id => el(id).addEventListener('change', render));
+el('fTexto').addEventListener('input', render);
+['fSeveridad2','fRegla2','fFormulador2','fOrden2'].forEach(id => el(id).addEventListener('change', render));
+el('buscarEvaluador').addEventListener('input', render);
+el('btnReload').addEventListener('click', cargarTodo);
+
+el('btnExport').addEventListener('click', () => {
+  const datos = filtrarBase();
+  if (!datos.length){ alert('No hay inconsistencias para exportar'); return; }
+  const head = ['Severidad','Tipo error','Hoja','Código BIP','Iniciativa','Evaluador','Formulador','Comuna','Estado','Monto (M$)','Detalle'];
+  const csv = [head.join(';'), ...datos.map(filaCSV)].join('\n');
+  descargarCSV(`inconsistencias_${hojaActiva}_${new Date().toISOString().slice(0,10)}.csv`, csv);
+});
+
+el('btnExportTodos').addEventListener('click', exportarTodosCSV);
+
+cargarTodo();
+</script>
+</body>
+</html>
